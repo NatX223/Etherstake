@@ -52,6 +52,7 @@
     "react-dom": "^18",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
+    "thirdweb": "^5.105.18",
     "viem": "^2.23.6",
     "wagmi": "^2.14.12",
     "which": "^5.0.0",
