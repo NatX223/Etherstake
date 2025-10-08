@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AnimatePresence } from 'framer-motion';
-import { useConnect, useActiveAccount } from "thirdweb/react";
+import { useConnect, useActiveAccount, useProfiles } from "thirdweb/react";
 import { inAppWallet } from "thirdweb/wallets";
 import { client } from '~/lib/thirdwebClient';
 
@@ -14,7 +14,16 @@ const wallet = inAppWallet();
 function WalletConnectButton() {
   const { connect } = useConnect();
   const account = useActiveAccount();
+  const { data: profiles } = useProfiles({ client });
   const [showOptions, setShowOptions] = useState(false);
+
+  useEffect(() => {
+    if (account && profiles && profiles.length > 0) {
+      console.log("Profile Type:", profiles[0].type);
+      console.log("Email:", profiles[0].details?.email || "No email");
+      console.log("Profile Details:", profiles[0]);
+    }
+  }, [account, profiles]);
 
   const connectWithStrategy = (strategy: any) => {
     connect(async () => {

@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from 'next/navigation';
+import { useProfiles, useActiveAccount } from "thirdweb/react";
+import { client } from '~/lib/thirdwebClient';
 
 const typeOptions = {
   Productivity: ["Commit", "Streak"],
@@ -8,13 +11,16 @@ const typeOptions = {
 };
 
 export default function CreateChallengePage() {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Productivity");
   const [type, setType] = useState(typeOptions["Productivity"][0]);
   const [metric, setMetric] = useState("");
-  const [deadline, setDeadline] = useState("");
+  const [deadline, setDeadline] = useState<Date>(new Date());
+  const [isLoading, setIsLoading] = useState(false);
   const [touched, setTouched] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Update type when category changes
   const handleCategoryChange = (e: React.ChangeEvent<{ value: unknown }>) => {
@@ -30,6 +36,41 @@ export default function CreateChallengePage() {
     type &&
     metric &&
     deadline;
+
+  // const createMarket = async(marketAddress: string) => {
+  //   const market = 
+  // }
+
+  const handleCreateChallenge = async () => {
+    const account = useActiveAccount();
+    const { data: profiles } = useProfiles({ client });
+    if (!account) return;
+    setIsLoading(true);
+    try {
+      // Prepare FormData with cover image and timeline data
+      const formData = new FormData();
+      const challengeData = {
+        title: title,
+        description: description,
+        metric: metric,
+        deadline: deadline,
+        authorAddress: account.address,
+        username: profiles?.[0].details.username,
+        platform: profiles?.[0].type,
+      };
+      formData.append('challengeData', JSON.stringify(challengeData));
+      // Call backend API to handle uploads and timeline creation
+      const response = await fetch('/api/challenges/create', { method: 'POST', body: formData });
+      if (!response.ok) throw new Error('Failed to create challenge');
+      const { challengeId, challengeMarket } = await response.json();
+      // Redirect to the timeline page
+      router.push(`/challenge/${challengeId}`);
+    } catch (error: any) {
+      setErrorMsg(error.message || 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary to-dark py-10">
@@ -119,8 +160,8 @@ export default function CreateChallengePage() {
               <label className="block text-accent font-semibold mb-2">Deadline</label>
               <input
                 type="date"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
+                value={deadline.toISOString().split('T')[0]}
+                onChange={(e) => setDeadline(new Date(e.target.value))}
                 min={new Date().toISOString().split('T')[0]}
                 className="w-full bg-dark border border-accent/30 rounded-lg px-4 py-3 text-gray-500 focus:outline-none focus:border-accent"
                 required
