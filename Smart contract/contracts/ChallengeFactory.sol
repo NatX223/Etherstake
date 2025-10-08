@@ -6,24 +6,25 @@ import "./Challenge.sol";
 contract ChallengeFactory {
     address public owner;
     address[] public settlers;
-    address public routerContract;
+    address public rewardManager;
     mapping(uint256 => address) public deployedChallenges;
     uint256 public challengeCounter;
+    uint256 public currentWeek;
 
     event OwnerChanged(address indexed oldOwner, address indexed newOwner);
     event SettlersChanged(address[] newSettlers);
-    event RouterContractChanged(address indexed oldRouterContract, address indexed newRouterContract);
-    event ChallengeDeployed(uint256 indexed challengeId, address indexed challenge, address indexed settler, address routerContract);
+    event rewardManagerChanged(address indexed oldrewardManager, address indexed newrewardManager);
+    event ChallengeDeployed(uint256 indexed challengeId, address indexed challenge, address indexed settler, address rewardManager);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not owner");
         _;
     }
 
-    constructor(address _owner, address[] memory _settlers, address _routerContract) {
+    constructor(address _owner, address[] memory _settlers, address _rewardManager) {
         owner = _owner;
         settlers = _settlers;
-        routerContract = _routerContract;
+        rewardManager = _rewardManager;
     }
 
     // Change owner
@@ -33,6 +34,10 @@ contract ChallengeFactory {
         owner = _newOwner;
     }
 
+    function updateWeek(uint256 week) external onlyOwner() {
+        currentWeek = week;
+    }
+
     // Change settlers
     function changeSettlers(address[] calldata _newSettlers) external onlyOwner {
         settlers = _newSettlers;
@@ -40,10 +45,10 @@ contract ChallengeFactory {
     }
 
     // Change router contract
-    function changeRouterContract(address _newRouterContract) external onlyOwner {
-        require(_newRouterContract != address(0), "Zero address");
-        emit RouterContractChanged(routerContract, _newRouterContract);
-        routerContract = _newRouterContract;
+    function changerewardManager(address _newrewardManager) external onlyOwner {
+        require(_newrewardManager != address(0), "Zero address");
+        emit rewardManagerChanged(rewardManager, _newrewardManager);
+        rewardManager = _newrewardManager;
     }
 
     // Deploy a new Challenge contract with a random settler
@@ -51,10 +56,10 @@ contract ChallengeFactory {
         require(settlers.length > 0, "No settlers");
         uint256 randomIndex = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, msg.sender))) % settlers.length;
         address selectedSettler = settlers[randomIndex];
-        Challenge challenge = new Challenge(selectedSettler, routerContract);
+        Challenge challenge = new Challenge(selectedSettler, rewardManager, currentWeek);
         challengeCounter++;
         deployedChallenges[challengeCounter] = address(challenge);
-        emit ChallengeDeployed(challengeCounter, address(challenge), selectedSettler, routerContract);
+        emit ChallengeDeployed(challengeCounter, address(challenge), selectedSettler, rewardManager);
     }
 
     // Get challenge address by ID
